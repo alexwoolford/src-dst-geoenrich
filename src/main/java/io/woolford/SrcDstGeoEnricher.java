@@ -3,6 +3,8 @@ package io.woolford;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.maxmind.geoip2.DatabaseReader;
+import com.maxmind.geoip2.record.City;
+import com.maxmind.geoip2.record.Country;
 import com.maxmind.geoip2.record.Location;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.*;
@@ -29,6 +31,33 @@ public class SrcDstGeoEnricher {
 
     private static JsonObject getLocationFromIp(String ip) {
 
+        JsonObject jsonLocation = new JsonObject();
+        jsonLocation.addProperty("ip", ip);
+
+        City city;
+        try {
+            city = reader.city(InetAddress.getByName(ip)).getCity();
+        } catch (Exception e) {
+            city = null;
+        }
+
+        if (city != null) {
+            jsonLocation.addProperty("city", city.getName());
+        }
+
+
+        Country country;
+        try {
+            country = reader.city(InetAddress.getByName(ip)).getCountry();
+        } catch (Exception e) {
+            country = null;
+        }
+
+        if (country != null) {
+            jsonLocation.addProperty("country", country.getName());
+        }
+
+
         Location location;
         try {
             location = reader.city(InetAddress.getByName(ip)).getLocation();
@@ -36,8 +65,6 @@ public class SrcDstGeoEnricher {
             location = null;
         }
 
-        JsonObject jsonLocation = new JsonObject();
-        jsonLocation.addProperty("ip", ip);
 
         if (location != null){
             JsonObject latLon = new JsonObject();
